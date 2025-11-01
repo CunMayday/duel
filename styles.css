@@ -1,6 +1,6 @@
 /*
-Version: 4.0
-Latest changes: Added fighter images, increased piste size for better visibility
+Version: 5.0
+Latest changes: Changed fighter CSS classes from player/opponent to left-fighter/right-fighter for correct image display
 */
 
 * {
@@ -285,11 +285,11 @@ body {
     background-position: center;
 }
 
-.swordsman.player {
+.swordsman.left-fighter {
     background-image: url('left side fighter.png');
 }
 
-.swordsman.opponent {
+.swordsman.right-fighter {
     background-image: url('right side fighter.png');
 }
 

@@ -1,6 +1,6 @@
 /*
-Version: 4.0
-Latest changes: Updated to use fighter images instead of text, increased piste size
+Version: 5.0
+Latest changes: Fixed fighter image visibility - images now based on screen position (left/right) not player identity
 */
 
 class UI {
@@ -249,24 +249,20 @@ class UI {
         // Remove all swordsmen
         document.querySelectorAll('.swordsman').forEach(s => s.remove());
 
-        // Add player swordsman
-        const playerPos = this.game.playerNumber === 1 ? gameState.player1Position : gameState.player2Position;
-        const playerSpace = this.piste.querySelector(`[data-position="${playerPos}"]`);
-        if (playerSpace) {
-            const playerSwordsman = document.createElement('div');
-            playerSwordsman.className = 'swordsman player';
-            // Image is set via CSS background-image
-            playerSpace.appendChild(playerSwordsman);
+        // Add player 1 swordsman (always on left side)
+        const player1Space = this.piste.querySelector(`[data-position="${gameState.player1Position}"]`);
+        if (player1Space) {
+            const p1Swordsman = document.createElement('div');
+            p1Swordsman.className = 'swordsman left-fighter';
+            player1Space.appendChild(p1Swordsman);
         }
 
-        // Add opponent swordsman
-        const opponentPos = this.game.playerNumber === 1 ? gameState.player2Position : gameState.player1Position;
-        const opponentSpace = this.piste.querySelector(`[data-position="${opponentPos}"]`);
-        if (opponentSpace) {
-            const opponentSwordsman = document.createElement('div');
-            opponentSwordsman.className = 'swordsman opponent';
-            // Image is set via CSS background-image
-            opponentSpace.appendChild(opponentSwordsman);
+        // Add player 2 swordsman (always on right side)
+        const player2Space = this.piste.querySelector(`[data-position="${gameState.player2Position}"]`);
+        if (player2Space) {
+            const p2Swordsman = document.createElement('div');
+            p2Swordsman.className = 'swordsman right-fighter';
+            player2Space.appendChild(p2Swordsman);
         }
     }
 

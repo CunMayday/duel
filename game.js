@@ -1,6 +1,6 @@
 /*
-Version: 3.0
-Latest changes: Added riposte, backward moves, better logging, auto-fail parry when no cards
+Version: 4.0
+Latest changes: Fixed card drawing bugs - added drawCards() calls after parry and riposte to maintain 5-card hands
 */
 
 class Game {
@@ -324,11 +324,16 @@ class Game {
         const updates = {};
         this.setMyHand(updates, newHand);
 
+        // Draw cards to refill hand
+        await this.drawCards(updates);
+
         this.addLog(`Player ${this.playerNumber} parries successfully!`);
 
         // Check if riposte is possible (can immediately attack back)
+        // Need to check the NEW hand after drawing cards
+        const finalHand = updates[`player${this.playerNumber}Hand`];
         const distance = this.getDistance();
-        const hasRiposteCard = newHand.some(card => card === distance);
+        const hasRiposteCard = finalHand.some(card => card === distance);
 
         if (hasRiposteCard) {
             this.addLog(`Player ${this.playerNumber} can riposte!`);
@@ -363,7 +368,14 @@ class Game {
         const updates = {};
         this.setMyHand(updates, newHand);
 
+        // Draw cards before scoring hit
+        await this.drawCards(updates);
+
         this.addLog(`Player ${this.playerNumber} ripostes with card ${cardValue}! Immediate hit!`);
+        updates.actionLog = this.gameState.actionLog;
+
+        // Update hand and deck before scoring
+        await this.gameDoc.update(updates);
 
         // Riposte is an instant win
         await this.scoreHit(this.playerNumber);

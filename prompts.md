@@ -1,5 +1,69 @@
 # Prompt and Response Tracking
 
+## 5. Fix Fighter Image Display and Card Drawing Bugs
+
+**Agent**: Claude (Sonnet 4.5)
+
+**Date**: 2025-11-01
+
+**Prompt**:
+User reported three critical bugs after testing with the fighter images:
+1. Players only seeing opponent's figure, not their own
+2. Same image used for both players (need left image for left screen position, right for right)
+3. Card draws not working correctly - players sometimes have only 4 cards even when not attacked
+
+**Root Causes Identified**:
+
+1. **Fighter Image Bug**: The code was assigning CSS classes based on player identity (.player/.opponent) rather than screen position. Both players saw themselves as "player", so both saw the same image. The images need to be tied to screen position (left/right) not player identity.
+
+2. **Card Drawing Bug**: The `parry()` and `riposte()` methods removed cards from player hands but never called `drawCards()` to refill back to 5 cards. This left players with incomplete hands after parrying or riposting.
+
+**Changes Made**:
+
+1. **Updated [ui.js](ui.js)** (Version 4.0 → 5.0):
+   - **Fixed `updatePositions()` method** (lines 248-267):
+     - Changed from player/opponent logic to position-based logic
+     - Now assigns `.left-fighter` class to Player 1 (always on left side)
+     - Assigns `.right-fighter` class to Player 2 (always on right side)
+     - Both players now see BOTH fighters correctly on their screens
+
+2. **Updated [styles.css](styles.css)** (Version 4.0 → 5.0):
+   - **Changed CSS classes** (lines 288-294):
+     - Renamed `.swordsman.player` → `.swordsman.left-fighter`
+     - Renamed `.swordsman.opponent` → `.swordsman.right-fighter`
+     - Images now tied to screen position, not player identity
+
+3. **Updated [game.js](game.js)** (Version 3.0 → 4.0):
+   - **Fixed `parry()` method** (lines 327-328):
+     - Added `await this.drawCards(updates)` after removing parry cards
+     - Updated riposte check to use finalHand (after drawing cards)
+   - **Fixed `riposte()` method** (lines 366-373):
+     - Added `await this.drawCards(updates)` after removing riposte card
+     - Added `updates.actionLog` assignment
+     - Added `await this.gameDoc.update(updates)` before scoring hit
+     - Ensures hand is refilled before round ends
+
+**Bug Fix Details**:
+
+**Fighter Images**:
+- ✅ Player 1 always sees left image at Player 1's position
+- ✅ Player 1 always sees right image at Player 2's position
+- ✅ Player 2 always sees left image at Player 1's position
+- ✅ Player 2 always sees right image at Player 2's position
+- ✅ Images correctly correspond to screen position (left vs right)
+
+**Card Drawing**:
+- ✅ After parrying, player draws back to 5 cards
+- ✅ After riposting, player draws back to 5 cards
+- ✅ Cards are drawn BEFORE riposte check (so new cards can be used for riposte)
+- ✅ Maintains game balance - players always have full hands
+
+**Technical Changes**:
+- Fighter rendering: Player identity-based → Position-based
+- CSS classes: `.player`/`.opponent` → `.left-fighter`/`.right-fighter`
+- Card management: Added missing `drawCards()` calls in two methods
+- State updates: Ensured proper async/await sequencing
+
 ## 4. Add Custom Fighter Images and Increase Playing Area
 
 **Agent**: Claude (Sonnet 4.5)
