@@ -4,14 +4,25 @@ Latest changes: Updated to use Firestore instead of Realtime Database
 */
 
 // Firebase configuration - REPLACE WITH YOUR OWN CONFIG FROM FIREBASE CONSOLE
+// Your web app's Firebase configuration
+
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+
+  apiKey: "AIzaSyA7BGBxixXv3643dSI9kY8AFVIEzE9HzDQ",
+
+  authDomain: "duelengarde.firebaseapp.com",
+
+  projectId: "duelengarde",
+
+  storageBucket: "duelengarde.firebasestorage.app",
+
+  messagingSenderId: "856183123655",
+
+  appId: "1:856183123655:web:dc7162af1dec39416c98e2"
+
 };
+
+
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
