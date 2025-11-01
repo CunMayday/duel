@@ -1,5 +1,71 @@
 # Prompt and Response Tracking
 
+## 6. Fix Left Fighter Visibility and Card Drawing After Every Turn
+
+**Agent**: Claude (Sonnet 4.5)
+
+**Date**: 2025-11-01
+
+**Prompt**:
+User reported two critical issues after testing:
+1. The player on the left is not visible at all - both sides only see the player on the right
+2. Cards not being drawn after moves - the issue is that card draw should happen at the end of EVERY turn, not just after parrying/riposting
+
+**Root Causes Identified**:
+
+1. **Left Fighter Invisible**: The actual file name is "Left side fighter.png" (capital L) but the CSS referenced "left side fighter.png" (lowercase l). On case-sensitive systems or when served over HTTP, this causes the image to fail to load.
+
+2. **Card Drawing Bug**: The `drawCards()` function was reading from `this.gameState` (the old state before the current turn) instead of checking the `updates` object first. When a card was played:
+   - Card removed from hand and stored in `updates` object
+   - `drawCards()` called but reads old hand from `this.gameState` (still has 5 cards)
+   - Calculates `cardsNeeded = 5 - 5 = 0`
+   - No cards drawn!
+
+**Changes Made**:
+
+1. **Updated [styles.css](styles.css)** (Version 5.0 → 6.0):
+   - **Fixed file name capitalization** (line 289):
+     - Changed `url('left side fighter.png')` → `url('Left side fighter.png')`
+     - Now matches actual file name with capital L
+     - Left fighter now loads correctly
+
+2. **Updated [game.js](game.js)** (Version 4.0 → 5.0):
+   - **Completely rewrote `drawCards()` function** (lines 483-501):
+     - Now checks `updates` object FIRST before falling back to `gameState`
+     - Reads current hand: `updates[handKey] ?? this.getMyHand()`
+     - Reads current deck: `updates.deck ?? this.gameState.deck`
+     - This ensures it uses the updated hand (after card was played) not the stale state
+     - Cards are now correctly drawn after every turn
+
+**Bug Fix Details**:
+
+**Left Fighter Visibility**:
+- ✅ Fixed CSS file reference to match actual file name
+- ✅ Left fighter now visible to both players
+- ✅ Both fighters display correctly on all screens
+
+**Card Drawing After Every Turn**:
+- ✅ `drawCards()` now reads from `updates` object (current pending changes)
+- ✅ Falls back to `gameState` only if not in updates
+- ✅ Correctly calculates cards needed based on NEW hand state
+- ✅ Cards drawn after every move, attack, parry, and riposte
+- ✅ Players always maintain proper hand size
+
+**Technical Changes**:
+- File reference: Lowercase → Capitalized file name
+- drawCards() logic: Reads from stale `gameState` → Reads from `updates` object first
+- State management: Now properly handles pending updates before they're committed to Firebase
+
+**Why This Bug Occurred**:
+The bug happened because Firebase updates are asynchronous. The flow was:
+1. Remove card from hand → store in `updates`
+2. Call `drawCards(updates)`
+3. `drawCards()` reads from `this.gameState` (still has 5 cards from before the turn)
+4. Thinks hand is full, draws 0 cards
+5. `updates` sent to Firebase with only 4 cards
+
+The fix ensures `drawCards()` always checks the `updates` object first to see the current state.
+
 ## 5. Fix Fighter Image Display and Card Drawing Bugs
 
 **Agent**: Claude (Sonnet 4.5)

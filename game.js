@@ -1,6 +1,6 @@
 /*
-Version: 4.0
-Latest changes: Fixed card drawing bugs - added drawCards() calls after parry and riposte to maintain 5-card hands
+Version: 5.0
+Latest changes: Fixed drawCards() to read from updates object instead of stale gameState, ensuring cards are drawn correctly after every turn
 */
 
 class Game {
@@ -481,12 +481,15 @@ class Game {
     }
 
     async drawCards(updates) {
-        const myHand = this.getMyHand();
-        const cardsNeeded = 5 - myHand.length;
+        // Check if hand was already updated in the updates object (e.g., card was just played)
+        const handKey = `player${this.playerNumber}Hand`;
+        const currentHand = updates[handKey] !== undefined ? updates[handKey] : this.getMyHand();
+        const cardsNeeded = 5 - currentHand.length;
 
         if (cardsNeeded > 0) {
-            const deck = [...this.gameState.deck];
-            const newHand = [...myHand];
+            // Use deck from updates if it exists, otherwise use current state
+            const deck = updates.deck !== undefined ? [...updates.deck] : [...this.gameState.deck];
+            const newHand = [...currentHand];
 
             for (let i = 0; i < cardsNeeded && deck.length > 0; i++) {
                 newHand.push(deck.pop());

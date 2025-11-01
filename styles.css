@@ -1,6 +1,6 @@
 /*
-Version: 5.0
-Latest changes: Changed fighter CSS classes from player/opponent to left-fighter/right-fighter for correct image display
+Version: 6.0
+Latest changes: Fixed left fighter image file capitalization (Left side fighter.png)
 */
 
 * {
@@ -286,7 +286,7 @@ body {
 }
 
 .swordsman.left-fighter {
-    background-image: url('left side fighter.png');
+    background-image: url('Left side fighter.png');
 }
 
 .swordsman.right-fighter {
