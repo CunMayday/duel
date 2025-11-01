@@ -1,5 +1,89 @@
 # Prompt and Response Tracking
 
+## 7. Reduce Piste Size and Remove Advance and Attack
+
+**Agent**: Claude (Sonnet 4.5)
+
+**Date**: 2025-11-01
+
+**Prompt**:
+User requested two gameplay changes:
+1. Reduce the play area size from 23 spaces to 19 spaces
+2. Remove the "Advance and Attack" option entirely
+
+**Changes Made**:
+
+1. **Updated [ui.js](ui.js)** (Version 5.0 → 6.0):
+   - **Modified `renderPiste()` method** (line 132):
+     - Changed loop from `i < 23` to `i < 19`
+     - Updated end space check from `i === 22` to `i === 18`
+   - **Removed Advance & Attack button** (lines 364-368):
+     - Deleted the "Advance & Attack" button creation code
+     - Now only shows: Move Forward, Move Backward, and Attack options
+   - **Removed `handleAdvanceAttackCardClick()` method**:
+     - Deleted entire method as it's no longer needed
+   - **Updated `handleCardClick()` method**:
+     - Removed `gameState.gamePhase === 'advanceAttack'` case
+   - **Updated `updateGamePhaseUI()` method**:
+     - Removed advance attack area hiding/showing logic
+     - Removed retreat button for advance attacks
+   - **Removed advance attack element references**:
+     - Deleted `this.advanceAttackArea` and `this.attackCards` element initialization
+
+2. **Updated [game.js](game.js)** (Version 5.0 → 6.0):
+   - **Modified `createInitialGameState()` method** (line 74):
+     - Changed `player2Position: 22` → `player2Position: 18`
+   - **Modified `startNewRound()` method** (line 124):
+     - Changed `player2Position: 22` → `player2Position: 18`
+   - **Updated move validation** (lines 189, 205):
+     - Changed `newPos > 22` → `newPos > 18` for Player 1
+     - Changed `Math.min(22, ...)` → `Math.min(18, ...)` for Player 2
+   - **Removed `handleAdvance()` method**:
+     - Deleted entire method that handled advance card play
+   - **Removed `advanceAttackCard()` method**:
+     - Deleted method that handled attack after advance
+   - **Removed `retreatFromAdvanceAttack()` method**:
+     - Deleted retreat option from advance attacks
+   - **Removed `canAdvanceAndAttack()` method**:
+     - Deleted validation method for advance and attack
+   - **Updated `playCard()` switch statement** (lines 164-174):
+     - Removed `case 'advance'` option
+
+3. **Updated [index.html](index.html)** (Version 3.0 → 4.0):
+   - **Updated piste comment** (line 82):
+     - Changed from "23 spaces" to "19 spaces"
+   - **Removed advance attack area HTML** (lines 104-107):
+     - Deleted entire `<div id="advance-attack-area">` section
+
+**Gameplay Impact**:
+
+**Piste Size Reduction (23 → 19)**:
+- ✅ Players now start 18 spaces apart (positions 0 and 18)
+- ✅ Shorter piste makes the game faster-paced
+- ✅ Reduces maximum movement range from 22 to 18
+- ✅ All position validation updated to respect new boundaries
+
+**Advance and Attack Removal**:
+- ✅ Simplified gameplay - removed most complex mechanic
+- ✅ Players can no longer move forward and attack in same turn
+- ✅ No more retreat option for defenders
+- ✅ Only three actions remain: Move Forward, Move Backward, Attack
+- ✅ Removed entire `advanceAttack` game phase
+- ✅ Removed `isAdvanceAttack` flag from attack data
+
+**Code Cleanup**:
+- Removed 4 methods from game.js (~120 lines)
+- Removed advance attack UI elements and handlers
+- Simplified game phase logic
+- Cleaner, more maintainable codebase
+
+**Remaining Features**:
+- Move forward/backward
+- Attack (when at exact distance)
+- Strengthen attack (with matching cards)
+- Parry (with matching card count and total value)
+- Riposte (after successful parry, if card matches distance)
+
 ## 6. Fix Left Fighter Visibility and Card Drawing After Every Turn
 
 **Agent**: Claude (Sonnet 4.5)

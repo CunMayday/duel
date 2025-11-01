@@ -1,6 +1,6 @@
 /*
-Version: 5.0
-Latest changes: Fixed fighter image visibility - images now based on screen position (left/right) not player identity
+Version: 6.0
+Latest changes: Reduced piste from 23 to 19 spaces, removed Advance and Attack feature
 */
 
 class UI {
@@ -48,8 +48,6 @@ class UI {
         this.parryCardCount = document.getElementById('parry-card-count');
         this.parryRequiredValue = document.getElementById('parry-required-value');
         this.finishParryBtn = document.getElementById('finish-parry-btn');
-        this.advanceAttackArea = document.getElementById('advance-attack-area');
-        this.attackCards = document.getElementById('attack-cards');
 
         // Round result modal
         this.roundResultModal = document.getElementById('round-result-modal');
@@ -129,12 +127,12 @@ class UI {
 
     renderPiste() {
         this.piste.innerHTML = '';
-        for (let i = 0; i < 23; i++) {
+        for (let i = 0; i < 19; i++) {
             const space = document.createElement('div');
             space.className = 'space';
             space.dataset.position = i;
             space.textContent = i; // Add space number
-            if (i === 0 || i === 22) {
+            if (i === 0 || i === 18) {
                 space.classList.add('end-space');
             }
             this.piste.appendChild(space);
@@ -310,8 +308,6 @@ class UI {
             this.handleStrengthenClick(cardValue);
         } else if (gameState.gamePhase === 'parrying') {
             this.handleParryCardClick(cardElement, cardValue);
-        } else if (gameState.gamePhase === 'advanceAttack') {
-            this.handleAdvanceAttackCardClick(cardValue);
         } else if (gameState.gamePhase === 'riposte') {
             this.handleRiposteClick(cardValue);
         }
@@ -366,15 +362,6 @@ class UI {
                 this.cardActions.classList.add('hidden');
             });
             this.cardActions.appendChild(btn);
-
-            const advBtn = document.createElement('button');
-            advBtn.className = 'advance-attack-btn';
-            advBtn.textContent = `Advance & Attack`;
-            advBtn.addEventListener('click', () => {
-                this.game.playCard(cardValue, 'advance');
-                this.cardActions.classList.add('hidden');
-            });
-            this.cardActions.appendChild(advBtn);
         }
 
         if (!canMoveForward && !canMoveBackward && !canAttack) {
@@ -406,9 +393,6 @@ class UI {
         }
     }
 
-    handleAdvanceAttackCardClick(cardValue) {
-        this.game.advanceAttackCard(cardValue);
-    }
 
     handleRiposteClick(cardValue) {
         const distance = this.game.getDistance();
@@ -436,7 +420,6 @@ class UI {
         // Hide all action areas by default
         this.attackStrengthener.classList.add('hidden');
         this.parryArea.classList.add('hidden');
-        this.advanceAttackArea.classList.add('hidden');
         this.cardActions.classList.add('hidden');
 
         if (gameState.gamePhase === 'attacking' && this.game.isMyTurn()) {
@@ -475,21 +458,7 @@ class UI {
                 this.attackValue.textContent = attackData.totalValue;
                 this.parryCardCount.textContent = attackData.cardCount;
                 this.parryRequiredValue.textContent = attackData.totalValue;
-
-                // Show retreat option for advance attacks
-                if (attackData.isAdvanceAttack) {
-                    const existingRetreatBtn = this.parryArea.querySelector('.retreat-btn');
-                    if (!existingRetreatBtn) {
-                        const retreatBtn = document.createElement('button');
-                        retreatBtn.className = 'retreat-btn';
-                        retreatBtn.textContent = 'Retreat Instead';
-                        retreatBtn.addEventListener('click', () => this.game.retreatFromAdvanceAttack());
-                        this.parryArea.appendChild(retreatBtn);
-                    }
-                }
             }
-        } else if (gameState.gamePhase === 'advanceAttack' && this.game.isMyTurn()) {
-            this.advanceAttackArea.classList.remove('hidden');
         } else if (gameState.gamePhase === 'riposte' && this.game.isMyTurn()) {
             this.cardActions.classList.remove('hidden');
             this.cardActions.innerHTML = `

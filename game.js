@@ -1,6 +1,6 @@
 /*
-Version: 5.0
-Latest changes: Fixed drawCards() to read from updates object instead of stale gameState, ensuring cards are drawn correctly after every turn
+Version: 6.0
+Latest changes: Reduced piste from 23 to 19 spaces, removed Advance and Attack feature
 */
 
 class Game {
@@ -71,7 +71,7 @@ class Game {
             player1Score: 0,
             player2Score: 0,
             player1Position: 0,
-            player2Position: 22,
+            player2Position: 18,
             deck: this.createDeck(),
             player1Hand: [],
             player2Hand: [],
@@ -121,7 +121,7 @@ class Game {
 
         const updates = {};
         updates.player1Position = 0;
-        updates.player2Position = 22;
+        updates.player2Position = 18;
         updates.gamePhase = 'playing';
         updates.attackData = null;
         updates.lastCardPlayed = null;
@@ -171,9 +171,6 @@ class Game {
             case 'attack':
                 await this.handleAttack(cardValue, updates);
                 break;
-            case 'advance':
-                await this.handleAdvance(cardValue, updates);
-                break;
         }
     }
 
@@ -186,7 +183,7 @@ class Game {
             // Move toward opponent
             if (this.playerNumber === 1) {
                 newPos = myPos + cardValue;
-                if (newPos >= opponentPos || newPos > 22) {
+                if (newPos >= opponentPos || newPos > 18) {
                     this.addLog('Invalid move - cannot move onto or past opponent');
                     return;
                 }
@@ -202,7 +199,7 @@ class Game {
             if (this.playerNumber === 1) {
                 newPos = Math.max(0, myPos - cardValue);
             } else {
-                newPos = Math.min(22, myPos + cardValue);
+                newPos = Math.min(18, myPos + cardValue);
             }
         }
 
@@ -237,24 +234,6 @@ class Game {
         await this.gameDoc.update(updates);
     }
 
-    async handleAdvance(cardValue, updates) {
-        const myPos = this.getMyPosition();
-        let newPos;
-
-        if (this.playerNumber === 1) {
-            newPos = myPos + cardValue;
-        } else {
-            newPos = myPos - cardValue;
-        }
-
-        this.setMyPosition(updates, newPos);
-        this.addLog(`Player ${this.playerNumber} advances ${cardValue} spaces (card ${cardValue})`);
-
-        updates.gamePhase = 'advanceAttack';
-        updates.actionLog = this.gameState.actionLog;
-
-        await this.gameDoc.update(updates);
-    }
 
     async strengthenAttack(cardValue) {
         if (this.gameState.gamePhase !== 'attacking') return;
@@ -391,71 +370,6 @@ class Game {
         await this.scoreHit(attackData.attacker);
     }
 
-    async advanceAttackCard(cardValue) {
-        if (this.gameState.gamePhase !== 'advanceAttack') return;
-        if (!this.isMyTurn()) return;
-
-        const distance = this.getDistance();
-        if (distance !== cardValue) {
-            this.addLog('Invalid attack - distance does not match card value');
-            return;
-        }
-
-        const myHand = this.getMyHand();
-        const cardIndex = myHand.indexOf(cardValue);
-        if (cardIndex === -1) return;
-
-        const newHand = [...myHand];
-        newHand.splice(cardIndex, 1);
-
-        const updates = {};
-        this.setMyHand(updates, newHand);
-
-        this.addLog(`Player ${this.playerNumber} attacks with card ${cardValue} (Advance and Attack)!`);
-        updates.gamePhase = 'attacking';
-        updates.attackData = {
-            attacker: this.playerNumber,
-            cards: [cardValue],
-            totalValue: cardValue,
-            cardCount: 1,
-            isAdvanceAttack: true
-        };
-        updates.actionLog = this.gameState.actionLog;
-
-        await this.gameDoc.update(updates);
-    }
-
-    async retreatFromAdvanceAttack() {
-        if (this.gameState.gamePhase !== 'parrying') return;
-        if (!this.isMyTurn()) return;
-
-        const attackData = this.gameState.attackData;
-        if (!attackData.isAdvanceAttack) {
-            this.addLog('Can only retreat from advance attacks');
-            return;
-        }
-
-        // Move backward
-        const myPos = this.getMyPosition();
-        let newPos;
-        if (this.playerNumber === 1) {
-            newPos = Math.max(0, myPos - 1);
-        } else {
-            newPos = Math.min(22, myPos + 1);
-        }
-
-        const updates = {};
-        this.setMyPosition(updates, newPos);
-        this.addLog(`Player ${this.playerNumber} retreats from advance attack`);
-
-        updates.gamePhase = 'playing';
-        updates.attackData = null;
-        this.switchTurn(updates);
-        updates.actionLog = this.gameState.actionLog;
-
-        await this.gameDoc.update(updates);
-    }
-
     async scoreHit(winnerNumber) {
         const updates = {};
         const scoreKey = `player${winnerNumber}Score`;
@@ -558,20 +472,6 @@ class Game {
         return this.getDistance() === cardValue;
     }
 
-    canAdvanceAndAttack(advanceCard, attackCard) {
-        const myPos = this.getMyPosition();
-        const opponentPos = this.getOpponentPosition();
-
-        let newPos;
-        if (this.playerNumber === 1) {
-            newPos = myPos + advanceCard;
-        } else {
-            newPos = myPos - advanceCard;
-        }
-
-        const newDistance = Math.abs(newPos - opponentPos);
-        return newDistance === attackCard;
-    }
 
     canMoveBackward(cardValue) {
         const myPos = this.getMyPosition();
