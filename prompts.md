@@ -1,5 +1,47 @@
 # Prompt and Response Tracking
 
+## 4. Add Custom Fighter Images and Increase Playing Area
+
+**Agent**: Claude (Sonnet 4.5)
+
+**Date**: 2025-11-01
+
+**Prompt**:
+User added two custom fighter images ("left side fighter.png" and "right side fighter.png") and requested to use these instead of the letter placeholders. Also requested to make the playing area larger so the fighters don't look tiny.
+
+**Changes Made**:
+
+1. **Updated [styles.css](styles.css)** (Version 4.0):
+   - **Increased piste space size**: Changed from 40px × 60px to **60px × 90px** (50% larger)
+   - **Updated swordsman styling**: Changed from circular colored backgrounds to **background images**
+   - **Fighter images**:
+     - Player uses `left side fighter.png` (50px × 70px)
+     - Opponent uses `right side fighter.png` (50px × 70px)
+   - **Removed circular background**: Changed from colored circles with letters to image display
+   - **Updated responsive design**: Adjusted mobile sizes (40px × 70px spaces, 35px × 50px fighters)
+
+2. **Updated [ui.js](ui.js)** (Version 4.0):
+   - **Removed text content** from swordsman elements (was "P" and "O")
+   - Images are now displayed via CSS background-image property
+   - Added comments explaining image display method
+
+3. **Added fighter images** to project:
+   - [left side fighter.png](left side fighter.png) - Player 1 fighter (facing right)
+   - [right side fighter.png](right side fighter.png) - Player 2 fighter (facing left)
+
+**Visual Improvements**:
+- ✅ Larger, more visible playing area (60px vs 40px wide spaces)
+- ✅ Professional fighter graphics instead of letters
+- ✅ Better proportions for viewing the game
+- ✅ Fighters are properly sized (50px × 70px) to fit in spaces
+- ✅ Responsive design maintained for mobile devices
+
+**Technical Details**:
+- Images use CSS `background-size: contain` to scale properly
+- `background-position: center` ensures proper alignment
+- Images positioned at `top: 5px` within spaces for better visibility
+- Mobile breakpoint adjusts sizes proportionally
+
 ## 3. Major UI/UX Improvements and Feature Additions
 
 **Agent**: Claude (Sonnet 4.5)

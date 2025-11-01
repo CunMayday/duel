@@ -1,6 +1,6 @@
 /*
-Version: 3.0
-Latest changes: Added card action buttons, auto-parry check, riposte support, round result modal, space numbers
+Version: 4.0
+Latest changes: Updated to use fighter images instead of text, increased piste size
 */
 
 class UI {
@@ -255,7 +255,7 @@ class UI {
         if (playerSpace) {
             const playerSwordsman = document.createElement('div');
             playerSwordsman.className = 'swordsman player';
-            playerSwordsman.textContent = 'P';
+            // Image is set via CSS background-image
             playerSpace.appendChild(playerSwordsman);
         }
 
@@ -265,7 +265,7 @@ class UI {
         if (opponentSpace) {
             const opponentSwordsman = document.createElement('div');
             opponentSwordsman.className = 'swordsman opponent';
-            opponentSwordsman.textContent = 'O';
+            // Image is set via CSS background-image
             opponentSpace.appendChild(opponentSwordsman);
         }
     }

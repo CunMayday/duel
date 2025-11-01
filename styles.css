@@ -1,6 +1,6 @@
 /*
-Version: 3.0
-Latest changes: Added space numbers, card action buttons, round result modal, improved UI
+Version: 4.0
+Latest changes: Added fighter images, increased piste size for better visibility
 */
 
 * {
@@ -253,8 +253,8 @@ body {
 }
 
 .space {
-    width: 40px;
-    height: 60px;
+    width: 60px;
+    height: 90px;
     background: white;
     border: 2px solid #34495e;
     display: flex;
@@ -262,9 +262,9 @@ body {
     align-items: center;
     justify-content: flex-end;
     position: relative;
-    font-size: 0.7em;
+    font-size: 0.8em;
     color: #999;
-    padding-bottom: 3px;
+    padding-bottom: 5px;
 }
 
 .space.end-space {
@@ -272,24 +272,25 @@ body {
 }
 
 .swordsman {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    width: 50px;
+    height: 70px;
     position: absolute;
+    top: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    color: white;
     z-index: 10;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .swordsman.player {
-    background: #28a745;
+    background-image: url('left side fighter.png');
 }
 
 .swordsman.opponent {
-    background: #dc3545;
+    background-image: url('right side fighter.png');
 }
 
 /* Deck Info */
@@ -589,15 +590,14 @@ body {
     }
 
     .space {
-        width: 30px;
-        height: 50px;
+        width: 40px;
+        height: 70px;
         font-size: 0.7em;
     }
 
     .swordsman {
-        width: 24px;
-        height: 24px;
-        font-size: 0.8em;
+        width: 35px;
+        height: 50px;
     }
 
     .card {
