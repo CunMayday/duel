@@ -1,6 +1,6 @@
 /*
-Version: 1.0
-Latest changes: Initial CSS styling for Efe's Duel game interface
+Version: 3.0
+Latest changes: Added space numbers, card action buttons, round result modal, improved UI
 */
 
 * {
@@ -258,11 +258,13 @@ body {
     background: white;
     border: 2px solid #34495e;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     position: relative;
-    font-size: 0.8em;
+    font-size: 0.7em;
     color: #999;
+    padding-bottom: 3px;
 }
 
 .space.end-space {
@@ -440,6 +442,144 @@ body {
     font-size: 0.8em;
     color: #999;
     margin-right: 10px;
+}
+
+/* Card Action Buttons */
+.card-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.card-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.card-actions .move-forward-btn {
+    background: #28a745;
+    color: white;
+}
+
+.card-actions .move-backward-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.card-actions .attack-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.card-actions .advance-attack-btn {
+    background: #fd7e14;
+    color: white;
+}
+
+.card-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.card-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.card-actions button:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Round Result Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal h2 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #667eea;
+}
+
+.modal.victory h2 {
+    color: #28a745;
+}
+
+.modal.defeat h2 {
+    color: #dc3545;
+}
+
+.modal .score-display {
+    font-size: 1.5em;
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.modal button {
+    margin-top: 20px;
+    padding: 15px 40px;
+    font-size: 1.2em;
+    border: none;
+    border-radius: 8px;
+    background: #667eea;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.modal button:hover {
+    background: #764ba2;
+    transform: translateY(-2px);
+}
+
+/* Riposte Message */
+.riposte-message {
+    background: #28a745;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    animation: pulse 2s infinite;
 }
 
 /* Responsive */

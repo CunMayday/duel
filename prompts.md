@@ -1,5 +1,84 @@
 # Prompt and Response Tracking
 
+## 3. Major UI/UX Improvements and Feature Additions
+
+**Agent**: Claude (Sonnet 4.5)
+
+**Date**: 2025-11-01
+
+**Prompt**:
+User tested the deployed game and provided feedback for 8 improvements:
+1. Add space numbers to the piste
+2. Replace popup prompts with UI buttons for card actions
+3. Add backward move option (missing from UI)
+4. Only show strengthen attack if cards available
+5. Log should show from/to positions when moving
+6. Auto-fail parry if no valid cards available (don't ask)
+7. Implement riposte after successful parry (was missing)
+8. Show big modal for round win/loss before starting new round
+
+**Changes Made**:
+
+1. **Updated [styles.css](styles.css)** (Version 3.0):
+   - Modified `.space` to show space numbers at bottom
+   - Added `.card-actions` styles for action buttons (Move Forward/Backward/Attack/Advance & Attack)
+   - Added `.modal-overlay` and `.modal` for round result screen
+   - Added `.riposte-message` styling with pulse animation
+   - Color-coded buttons: Green (move forward), Gray (move backward), Red (attack), Orange (advance & attack)
+
+2. **Updated [index.html](index.html)** (Version 3.0):
+   - Added `#card-actions` div below player hand for action buttons
+   - Added `#round-result-modal` with victory/defeat styling
+   - Modal shows score and "Continue" or "New Game" button
+
+3. **Updated [game.js](game.js)** (Version 3.0):
+   - **Added riposte mechanic**: After successful parry, check if player has card matching distance to opponent
+   - **New game phase**: 'riposte' - allows immediate counter-attack
+   - **New function**: `riposte(cardValue)` - instant win if successful
+   - **Enhanced move logging**: Now shows "from position X to Y"
+   - **Added backward moves**: `handleMove()` now accepts direction parameter
+   - **New helper functions**:
+     - `canMoveBackward(cardValue)` - check if backward move valid
+     - `canParry(attackData)` - check if player has cards to parry
+     - `hasStrengthenCards()` - check if strengthen cards available
+   - **Round end tracking**: Added `roundEnded` flag to game state
+   - **Fixed `playCard()`**: Now handles 'moveBackward' action
+
+4. **Completely rewrote [ui.js](ui.js)** (Version 3.0):
+   - **Removed all `prompt()` and `alert()` dialogs** for game actions
+   - **Added card action buttons**: Click card → show available actions as buttons
+   - **Space numbers**: Added to piste rendering (line 136)
+   - **Round result modal**: Shows victory/defeat with animation and score
+   - **Auto-parry check**: Detects if player cannot parry and shows message
+   - **Riposte UI**: Shows special message when riposte opportunity available
+   - **Smart strengthen UI**: Only shows if matching cards exist, otherwise shows message
+   - **New methods**:
+     - `showCardActions(cardValue)` - display action buttons for selected card
+     - `showRoundResult(gameState)` - display modal with round/game result
+     - `hideRoundResult()` - close modal and continue
+     - `handleRiposteClick(cardValue)` - handle riposte card selection
+
+5. **Improved action log messages**:
+   - Moves now show: "Player X moved forward/backward Y spaces from position A to B"
+   - Clear indication of riposte opportunities
+   - Better attack/parry messages
+
+**New Features**:
+- ✅ Space numbers on piste (0-22)
+- ✅ Button-based UI (no more popups!)
+- ✅ Backward movement option
+- ✅ Riposte after successful parry
+- ✅ Round result modal with victory/defeat animation
+- ✅ Smart UI (only shows valid options)
+- ✅ Auto-fail parry when impossible
+- ✅ Detailed move logging with positions
+
+**Technical Improvements**:
+- Better game state validation
+- Combination-finding algorithm for parry checking
+- Cleaner separation of concerns (game logic vs UI)
+- More responsive and intuitive UX
+
 ## 2. Convert to Firestore and Add Deployment Instructions
 
 **Agent**: Claude (Sonnet 4.5)

@@ -1,6 +1,6 @@
 /*
-Version: 2.0
-Latest changes: Converted from Realtime Database to Firestore with real-time listeners
+Version: 3.0
+Latest changes: Added riposte, backward moves, better logging, auto-fail parry when no cards
 */
 
 class Game {
@@ -76,9 +76,10 @@ class Game {
             player1Hand: [],
             player2Hand: [],
             actionLog: [],
-            gamePhase: 'waiting', // waiting, playing, attacking, parrying, gameOver
+            gamePhase: 'waiting', // waiting, playing, attacking, parrying, riposte, gameOver
             attackData: null,
             lastCardPlayed: null,
+            roundEnded: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
     }
@@ -162,7 +163,10 @@ class Game {
 
         switch (action) {
             case 'move':
-                await this.handleMove(cardValue, updates);
+                await this.handleMove(cardValue, updates, 'forward');
+                break;
+            case 'moveBackward':
+                await this.handleMove(cardValue, updates, 'backward');
                 break;
             case 'attack':
                 await this.handleAttack(cardValue, updates);
@@ -173,28 +177,38 @@ class Game {
         }
     }
 
-    async handleMove(cardValue, updates) {
+    async handleMove(cardValue, updates, direction = 'forward') {
         const myPos = this.getMyPosition();
         const opponentPos = this.getOpponentPosition();
 
-        // Determine direction - move toward opponent
         let newPos;
-        if (this.playerNumber === 1) {
-            newPos = myPos + cardValue;
-            if (newPos >= opponentPos || newPos > 22) {
-                this.addLog('Invalid move - cannot move onto or past opponent');
-                return;
+        if (direction === 'forward') {
+            // Move toward opponent
+            if (this.playerNumber === 1) {
+                newPos = myPos + cardValue;
+                if (newPos >= opponentPos || newPos > 22) {
+                    this.addLog('Invalid move - cannot move onto or past opponent');
+                    return;
+                }
+            } else {
+                newPos = myPos - cardValue;
+                if (newPos <= opponentPos || newPos < 0) {
+                    this.addLog('Invalid move - cannot move onto or past opponent');
+                    return;
+                }
             }
         } else {
-            newPos = myPos - cardValue;
-            if (newPos <= opponentPos || newPos < 0) {
-                this.addLog('Invalid move - cannot move onto or past opponent');
-                return;
+            // Move backward (retreat)
+            if (this.playerNumber === 1) {
+                newPos = Math.max(0, myPos - cardValue);
+            } else {
+                newPos = Math.min(22, myPos + cardValue);
             }
         }
 
+        const oldPos = myPos;
         this.setMyPosition(updates, newPos);
-        this.addLog(`Player ${this.playerNumber} moved ${cardValue} spaces (card ${cardValue})`);
+        this.addLog(`Player ${this.playerNumber} moved ${direction} ${cardValue} spaces (card ${cardValue}) from position ${oldPos} to ${newPos}`);
 
         await this.drawCards(updates);
         this.switchTurn(updates);
@@ -311,11 +325,48 @@ class Game {
         this.setMyHand(updates, newHand);
 
         this.addLog(`Player ${this.playerNumber} parries successfully!`);
-        updates.gamePhase = 'playing';
+
+        // Check if riposte is possible (can immediately attack back)
+        const distance = this.getDistance();
+        const hasRiposteCard = newHand.some(card => card === distance);
+
+        if (hasRiposteCard) {
+            this.addLog(`Player ${this.playerNumber} can riposte!`);
+            updates.gamePhase = 'riposte';
+        } else {
+            updates.gamePhase = 'playing';
+        }
+
         updates.attackData = null;
         updates.actionLog = this.gameState.actionLog;
 
         await this.gameDoc.update(updates);
+    }
+
+    async riposte(cardValue) {
+        if (this.gameState.gamePhase !== 'riposte') return;
+        if (!this.isMyTurn()) return;
+
+        const distance = this.getDistance();
+        if (distance !== cardValue) {
+            this.addLog('Invalid riposte - distance does not match card value');
+            return;
+        }
+
+        const myHand = this.getMyHand();
+        const cardIndex = myHand.indexOf(cardValue);
+        if (cardIndex === -1) return;
+
+        const newHand = [...myHand];
+        newHand.splice(cardIndex, 1);
+
+        const updates = {};
+        this.setMyHand(updates, newHand);
+
+        this.addLog(`Player ${this.playerNumber} ripostes with card ${cardValue}! Immediate hit!`);
+
+        // Riposte is an instant win
+        await this.scoreHit(this.playerNumber);
     }
 
     async failParry() {
@@ -401,6 +452,7 @@ class Game {
         if (updates[scoreKey] >= 5) {
             this.addLog(`Player ${winnerNumber} wins the game!`);
             updates.gamePhase = 'gameOver';
+            updates.roundEnded = true;
         } else {
             this.addLog(`Player ${winnerNumber} wins the round! Score: Player 1: ${winnerNumber === 1 ? updates[scoreKey] : this.gameState.player1Score}, Player 2: ${winnerNumber === 2 ? updates[scoreKey] : this.gameState.player2Score}`);
             updates.round = this.gameState.round + 1;
@@ -409,6 +461,7 @@ class Game {
             updates.player2Hand = [];
             updates.gamePhase = 'playing';
             updates.attackData = null;
+            updates.roundEnded = true;
         }
 
         updates.actionLog = this.gameState.actionLog;
@@ -503,6 +556,55 @@ class Game {
 
         const newDistance = Math.abs(newPos - opponentPos);
         return newDistance === attackCard;
+    }
+
+    canMoveBackward(cardValue) {
+        const myPos = this.getMyPosition();
+
+        if (this.playerNumber === 1) {
+            return myPos - cardValue >= 0;
+        } else {
+            return myPos + cardValue <= 22;
+        }
+    }
+
+    canParry(attackData) {
+        if (!attackData) return false;
+
+        const myHand = this.getMyHand();
+        const requiredCount = attackData.cardCount;
+        const requiredValue = attackData.totalValue;
+
+        // Try to find combination of cards that match
+        // For simplicity, check if we have enough cards and the right values
+        function findCombination(cards, count, target) {
+            if (count === 0) return target === 0;
+            if (cards.length === 0 || count > cards.length) return false;
+
+            for (let i = 0; i <= cards.length - count; i++) {
+                const card = cards[i];
+                const remaining = cards.slice(i + 1);
+                if (findCombination(remaining, count - 1, target - card)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        return findCombination(myHand, requiredCount, requiredValue);
+    }
+
+    hasStrengthenCards() {
+        if (this.gameState.gamePhase !== 'attacking') return false;
+        if (!this.isMyTurn()) return false;
+
+        const attackData = this.gameState.attackData;
+        if (!attackData) return false;
+
+        const attackValue = attackData.cards[0];
+        const myHand = this.getMyHand();
+
+        return myHand.some(card => card === attackValue);
     }
 
     onGameStateChanged() {

@@ -1,12 +1,13 @@
 /*
-Version: 1.0
-Latest changes: UI management and rendering logic with action log and turn indicators
+Version: 3.0
+Latest changes: Added card action buttons, auto-parry check, riposte support, round result modal, space numbers
 */
 
 class UI {
     constructor(game) {
         this.game = game;
         this.selectedCards = [];
+        this.selectedCardForAction = null;
         this.initializeElements();
     }
 
@@ -35,6 +36,7 @@ class UI {
         this.actionLog = document.getElementById('action-log');
         this.playerScoreMarker = document.getElementById('player-score-marker');
         this.opponentScoreMarker = document.getElementById('opponent-score-marker');
+        this.cardActions = document.getElementById('card-actions');
 
         // Action areas
         this.attackStrengthener = document.getElementById('attack-strengthener');
@@ -49,6 +51,12 @@ class UI {
         this.advanceAttackArea = document.getElementById('advance-attack-area');
         this.attackCards = document.getElementById('attack-cards');
 
+        // Round result modal
+        this.roundResultModal = document.getElementById('round-result-modal');
+        this.resultTitle = document.getElementById('result-title');
+        this.resultMessage = document.getElementById('result-message');
+        this.continueBtn = document.getElementById('continue-btn');
+
         this.setupEventListeners();
         this.renderPiste();
     }
@@ -61,6 +69,7 @@ class UI {
         this.leaveGameBtn.addEventListener('click', () => this.handleLeaveGame());
         this.finishAttackBtn.addEventListener('click', () => this.handleFinishAttack());
         this.finishParryBtn.addEventListener('click', () => this.handleFinishParry());
+        this.continueBtn.addEventListener('click', () => this.hideRoundResult());
     }
 
     async handleCreateGame() {
@@ -124,6 +133,7 @@ class UI {
             const space = document.createElement('div');
             space.className = 'space';
             space.dataset.position = i;
+            space.textContent = i; // Add space number
             if (i === 0 || i === 22) {
                 space.classList.add('end-space');
             }
@@ -133,6 +143,14 @@ class UI {
 
     updateGame(gameState) {
         if (!gameState) return;
+
+        // Check for round end and show modal
+        if (gameState.roundEnded && !this.roundResultModal.classList.contains('hidden')) {
+            // Modal is already showing
+        } else if (gameState.roundEnded) {
+            this.showRoundResult(gameState);
+            return; // Don't update other UI while modal is showing
+        }
 
         // Update turn indicator
         const isMyTurn = this.game.isMyTurn();
@@ -160,6 +178,49 @@ class UI {
         // Check if game just started
         if (gameState.gameStarted && this.menuScreen.classList.contains('active')) {
             this.showGameScreen();
+        }
+    }
+
+    showRoundResult(gameState) {
+        const playerScore = this.game.playerNumber === 1 ? gameState.player1Score : gameState.player2Score;
+        const opponentScore = this.game.playerNumber === 1 ? gameState.player2Score : gameState.player1Score;
+        const lastLog = gameState.actionLog[gameState.actionLog.length - 1];
+
+        const modal = this.roundResultModal.querySelector('.modal');
+
+        if (gameState.gamePhase === 'gameOver') {
+            const youWon = playerScore >= 5;
+            this.resultTitle.textContent = youWon ? 'VICTORY!' : 'DEFEAT';
+            modal.className = 'modal ' + (youWon ? 'victory' : 'defeat');
+            this.resultMessage.innerHTML = `
+                <p>${youWon ? 'You won the game!' : 'You lost the game.'}</p>
+                <p>Final Score: You ${playerScore} - ${opponentScore} Opponent</p>
+            `;
+            this.continueBtn.textContent = 'New Game';
+        } else {
+            const youWon = lastLog && lastLog.message.includes(`Player ${this.game.playerNumber} wins`);
+            this.resultTitle.textContent = youWon ? 'Round Won!' : 'Round Lost';
+            modal.className = 'modal ' + (youWon ? 'victory' : 'defeat');
+            this.resultMessage.innerHTML = `
+                <p>${lastLog ? lastLog.message : ''}</p>
+                <p>Score: You ${playerScore} - ${opponentScore} Opponent</p>
+            `;
+            this.continueBtn.textContent = 'Next Round';
+        }
+
+        this.roundResultModal.classList.remove('hidden');
+    }
+
+    async hideRoundResult() {
+        this.roundResultModal.classList.add('hidden');
+
+        if (this.game.gameState.gamePhase === 'gameOver') {
+            // Reload for new game
+            this.game.leaveGame();
+            location.reload();
+        } else {
+            // Clear the roundEnded flag
+            await this.game.gameDoc.update({ roundEnded: false });
         }
     }
 
@@ -230,7 +291,7 @@ class UI {
 
         const cardLabel = document.createElement('div');
         cardLabel.className = 'card-label';
-        cardLabel.textContent = 'Move';
+        cardLabel.textContent = 'Card';
 
         card.appendChild(cardValueEl);
         card.appendChild(cardLabel);
@@ -248,45 +309,83 @@ class UI {
         const gameState = this.game.gameState;
 
         if (gameState.gamePhase === 'playing') {
-            this.handleNormalCardClick(cardValue);
+            this.handleNormalCardClick(cardElement, cardValue);
         } else if (gameState.gamePhase === 'attacking') {
             this.handleStrengthenClick(cardValue);
         } else if (gameState.gamePhase === 'parrying') {
             this.handleParryCardClick(cardElement, cardValue);
         } else if (gameState.gamePhase === 'advanceAttack') {
             this.handleAdvanceAttackCardClick(cardValue);
+        } else if (gameState.gamePhase === 'riposte') {
+            this.handleRiposteClick(cardValue);
         }
     }
 
-    handleNormalCardClick(cardValue) {
-        const canMove = this.game.canMoveForward(cardValue);
+    handleNormalCardClick(cardElement, cardValue) {
+        // Highlight selected card
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+        cardElement.classList.add('selected');
+        this.selectedCardForAction = cardValue;
+
+        // Show available actions for this card
+        this.showCardActions(cardValue);
+    }
+
+    showCardActions(cardValue) {
+        this.cardActions.innerHTML = '';
+        this.cardActions.classList.remove('hidden');
+
+        const canMoveForward = this.game.canMoveForward(cardValue);
+        const canMoveBackward = this.game.canMoveBackward(cardValue);
         const canAttack = this.game.canAttack(cardValue);
 
-        if (!canMove && !canAttack) {
-            alert('This card cannot be played - invalid move and not an attack');
-            return;
+        if (canMoveForward) {
+            const btn = document.createElement('button');
+            btn.className = 'move-forward-btn';
+            btn.textContent = `Move Forward ${cardValue}`;
+            btn.addEventListener('click', () => {
+                this.game.playCard(cardValue, 'move');
+                this.cardActions.classList.add('hidden');
+            });
+            this.cardActions.appendChild(btn);
         }
 
-        let action;
-        if (canAttack && canMove) {
-            // Show choice dialog
-            action = prompt('Choose action:\n1. Move\n2. Attack\n3. Advance and Attack', '1');
-            if (action === '1') {
-                this.game.playCard(cardValue, 'move');
-            } else if (action === '2') {
+        if (canMoveBackward) {
+            const btn = document.createElement('button');
+            btn.className = 'move-backward-btn';
+            btn.textContent = `Move Backward ${cardValue}`;
+            btn.addEventListener('click', () => {
+                this.game.playCard(cardValue, 'moveBackward');
+                this.cardActions.classList.add('hidden');
+            });
+            this.cardActions.appendChild(btn);
+        }
+
+        if (canAttack) {
+            const btn = document.createElement('button');
+            btn.className = 'attack-btn';
+            btn.textContent = `Attack! (${cardValue})`;
+            btn.addEventListener('click', () => {
                 this.game.playCard(cardValue, 'attack');
-            } else if (action === '3') {
+                this.cardActions.classList.add('hidden');
+            });
+            this.cardActions.appendChild(btn);
+
+            const advBtn = document.createElement('button');
+            advBtn.className = 'advance-attack-btn';
+            advBtn.textContent = `Advance & Attack`;
+            advBtn.addEventListener('click', () => {
                 this.game.playCard(cardValue, 'advance');
-            }
-        } else if (canAttack) {
-            action = prompt('Choose action:\n1. Attack\n2. Advance and Attack', '1');
-            if (action === '1') {
-                this.game.playCard(cardValue, 'attack');
-            } else if (action === '2') {
-                this.game.playCard(cardValue, 'advance');
-            }
-        } else {
-            this.game.playCard(cardValue, 'move');
+                this.cardActions.classList.add('hidden');
+            });
+            this.cardActions.appendChild(advBtn);
+        }
+
+        if (!canMoveForward && !canMoveBackward && !canAttack) {
+            const msg = document.createElement('p');
+            msg.textContent = 'This card cannot be played (invalid move and distance)';
+            msg.style.color = '#dc3545';
+            this.cardActions.appendChild(msg);
         }
     }
 
@@ -315,15 +414,22 @@ class UI {
         this.game.advanceAttackCard(cardValue);
     }
 
+    handleRiposteClick(cardValue) {
+        const distance = this.game.getDistance();
+        if (distance === cardValue) {
+            this.game.riposte(cardValue);
+        } else {
+            alert(`Cannot riposte with this card. Distance is ${distance}.`);
+        }
+    }
+
     handleFinishAttack() {
         this.game.finishAttack();
     }
 
     handleFinishParry() {
         if (this.selectedCards.length === 0) {
-            if (confirm('No cards selected. Fail to parry?')) {
-                this.game.failParry();
-            }
+            this.game.failParry();
         } else {
             this.game.parry(this.selectedCards);
         }
@@ -331,33 +437,70 @@ class UI {
     }
 
     updateGamePhaseUI(gameState) {
-        // Hide all action areas
+        // Hide all action areas by default
         this.attackStrengthener.classList.add('hidden');
         this.parryArea.classList.add('hidden');
         this.advanceAttackArea.classList.add('hidden');
+        this.cardActions.classList.add('hidden');
 
         if (gameState.gamePhase === 'attacking' && this.game.isMyTurn()) {
-            this.attackStrengthener.classList.remove('hidden');
+            // Only show strengthen option if cards are available
+            if (this.game.hasStrengthenCards()) {
+                this.attackStrengthener.classList.remove('hidden');
+                const attackData = gameState.attackData;
+                const strengthenP = this.attackStrengthener.querySelector('p');
+                strengthenP.textContent = `Attack declared with card ${attackData.cards[0]}! Click matching cards to strengthen, or finish attack.`;
+            } else {
+                // Auto-finish if no strengthen cards available
+                const attackData = gameState.attackData;
+                this.attackStrengthener.classList.remove('hidden');
+                const strengthenP = this.attackStrengthener.querySelector('p');
+                strengthenP.textContent = `Attack declared with card ${attackData.cards[0]}! No cards available to strengthen. Click Finish Attack.`;
+            }
         } else if (gameState.gamePhase === 'parrying' && this.game.isMyTurn()) {
-            this.parryArea.classList.remove('hidden');
             const attackData = gameState.attackData;
-            this.attackValue.textContent = attackData.totalValue;
-            this.parryCardCount.textContent = attackData.cardCount;
-            this.parryRequiredValue.textContent = attackData.totalValue;
 
-            // Show retreat option for advance attacks
-            if (attackData.isAdvanceAttack) {
-                const retreatBtn = document.createElement('button');
-                retreatBtn.textContent = 'Retreat Instead';
-                retreatBtn.addEventListener('click', () => this.game.retreatFromAdvanceAttack());
-                this.parryArea.appendChild(retreatBtn);
+            // Check if player can parry
+            if (!this.game.canParry(attackData)) {
+                // Auto-fail parry
+                this.parryArea.classList.remove('hidden');
+                this.parryArea.innerHTML = `
+                    <p style="color: #dc3545; font-weight: bold;">
+                        You are being attacked with total value ${attackData.totalValue}!
+                        You don't have the cards to defend yourself. You will be hit.
+                    </p>
+                    <button id="accept-hit-btn" style="background: #dc3545;">Accept Hit</button>
+                `;
+                document.getElementById('accept-hit-btn').addEventListener('click', () => {
+                    this.game.failParry();
+                });
+            } else {
+                this.parryArea.classList.remove('hidden');
+                this.attackValue.textContent = attackData.totalValue;
+                this.parryCardCount.textContent = attackData.cardCount;
+                this.parryRequiredValue.textContent = attackData.totalValue;
+
+                // Show retreat option for advance attacks
+                if (attackData.isAdvanceAttack) {
+                    const existingRetreatBtn = this.parryArea.querySelector('.retreat-btn');
+                    if (!existingRetreatBtn) {
+                        const retreatBtn = document.createElement('button');
+                        retreatBtn.className = 'retreat-btn';
+                        retreatBtn.textContent = 'Retreat Instead';
+                        retreatBtn.addEventListener('click', () => this.game.retreatFromAdvanceAttack());
+                        this.parryArea.appendChild(retreatBtn);
+                    }
+                }
             }
         } else if (gameState.gamePhase === 'advanceAttack' && this.game.isMyTurn()) {
             this.advanceAttackArea.classList.remove('hidden');
-        } else if (gameState.gamePhase === 'gameOver') {
-            const winner = gameState.player1Score >= 5 ? 1 : 2;
-            const message = winner === this.game.playerNumber ? 'You won the game!' : 'You lost the game!';
-            alert(message);
+        } else if (gameState.gamePhase === 'riposte' && this.game.isMyTurn()) {
+            this.cardActions.classList.remove('hidden');
+            this.cardActions.innerHTML = `
+                <div class="riposte-message">
+                    🎯 Riposte Opportunity! Click a card matching the distance (${this.game.getDistance()}) to score an immediate hit!
+                </div>
+            `;
         }
     }
 
