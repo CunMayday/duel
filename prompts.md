@@ -1,5 +1,58 @@
 # Prompt and Response Tracking
 
+## 8. Add Card Dimming for Opponent's Turn
+
+**Agent**: Claude (Sonnet 4.5)
+
+**Date**: 2025-11-01
+
+**Prompt**:
+User requested: "When it is not a players turn, their cards should be dimmed and not respond to hovering over by raising the card."
+
+**Changes Made**:
+
+1. **Updated [ui.js](ui.js)** (Version 6.0 → 7.0):
+   - **Modified `updateHand()` method** (lines 267-283):
+     - Now checks if it's the player's turn using `this.game.isMyTurn()`
+     - Passes `isMyTurn` to `createCard()` as the `selectable` parameter
+     - Adds/removes `disabled-turn` class to the hand container based on turn state
+   - **Modified `createCard()` method** (lines 285-308):
+     - Changed logic: cards are marked as disabled when `!selectable`
+     - Removed the conditional check `else if (!selectable)` to just `else`
+     - All non-selectable cards now get the `disabled` class
+
+2. **Updated [styles.css](styles.css)** (Version 6.0 → 7.0):
+   - **Enhanced `.card.disabled:hover`** (line 393):
+     - Added `box-shadow: none` to prevent shadow on hover
+   - **Added `.hand.disabled-turn .card` rule** (lines 396-401):
+     - Sets `opacity: 0.4` to dim cards
+     - Sets `cursor: not-allowed` to show unavailable cursor
+     - Adds `filter: grayscale(50%)` to desaturate colors
+   - **Added `.hand.disabled-turn .card:hover` rule** (lines 403-406):
+     - Prevents `transform` animation on hover
+     - Removes `box-shadow` on hover
+
+**User Experience Improvements**:
+
+**Visual Feedback**:
+- ✅ Cards are dimmed to 40% opacity when not player's turn
+- ✅ Cards are desaturated (50% grayscale) for clear visual distinction
+- ✅ Cursor changes to "not-allowed" when hovering over cards
+- ✅ Cards don't raise up on hover when disabled
+- ✅ No shadow effect appears on hover when disabled
+
+**Turn State Clarity**:
+- ✅ Players can immediately see when it's their turn (bright, colorful cards)
+- ✅ Players can immediately see when it's opponent's turn (dim, grayed cards)
+- ✅ Prevents accidental clicks during opponent's turn
+- ✅ Clearer game flow and turn-based gameplay
+
+**Implementation Details**:
+- Uses CSS class toggle on hand container for efficient styling
+- Individual cards also marked as disabled for fallback behavior
+- Combines multiple visual cues (opacity, grayscale, cursor, no animation) for maximum clarity
+- No performance impact - pure CSS solution
+
 ## 7. Reduce Piste Size and Remove Advance and Attack
 
 **Agent**: Claude (Sonnet 4.5)

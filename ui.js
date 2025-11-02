@@ -1,6 +1,6 @@
 /*
-Version: 6.0
-Latest changes: Reduced piste from 23 to 19 spaces, removed Advance and Attack feature
+Version: 7.0
+Latest changes: Added card dimming and disabled hover effects when not player's turn
 */
 
 class UI {
@@ -266,12 +266,20 @@ class UI {
 
     updateHand(gameState) {
         const hand = this.game.getMyHand();
+        const isMyTurn = this.game.isMyTurn();
         this.playerHand.innerHTML = '';
 
         hand.forEach(cardValue => {
-            const card = this.createCard(cardValue);
+            const card = this.createCard(cardValue, isMyTurn);
             this.playerHand.appendChild(card);
         });
+
+        // Add/remove disabled class based on turn
+        if (!isMyTurn) {
+            this.playerHand.classList.add('disabled-turn');
+        } else {
+            this.playerHand.classList.remove('disabled-turn');
+        }
     }
 
     createCard(value, selectable = true) {
@@ -292,7 +300,7 @@ class UI {
 
         if (selectable && this.game.isMyTurn()) {
             card.addEventListener('click', () => this.handleCardClick(card, value));
-        } else if (!selectable) {
+        } else {
             card.classList.add('disabled');
         }
 

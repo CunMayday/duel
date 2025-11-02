@@ -1,6 +1,6 @@
 /*
-Version: 6.0
-Latest changes: Fixed left fighter image file capitalization (Left side fighter.png)
+Version: 7.0
+Latest changes: Added disabled-turn styles to dim cards and prevent hover effects when not player's turn
 */
 
 * {
@@ -390,6 +390,19 @@ body {
 
 .card.disabled:hover {
     transform: none;
+    box-shadow: none;
+}
+
+/* Dim all cards when it's not the player's turn */
+.hand.disabled-turn .card {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(50%);
+}
+
+.hand.disabled-turn .card:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .card-value {
