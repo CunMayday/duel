@@ -1,6 +1,6 @@
 /*
-Version: 6.0
-Latest changes: Reduced piste from 23 to 19 spaces, removed Advance and Attack feature
+Version: 7.0
+Latest changes: Added roundWinner field to fix round result messages showing correct winner
 */
 
 class Game {
@@ -379,6 +379,7 @@ class Game {
             this.addLog(`Player ${winnerNumber} wins the game!`);
             updates.gamePhase = 'gameOver';
             updates.roundEnded = true;
+            updates.roundWinner = winnerNumber;
         } else {
             this.addLog(`Player ${winnerNumber} wins the round! Score: Player 1: ${winnerNumber === 1 ? updates[scoreKey] : this.gameState.player1Score}, Player 2: ${winnerNumber === 2 ? updates[scoreKey] : this.gameState.player2Score}`);
             updates.round = this.gameState.round + 1;
@@ -388,6 +389,7 @@ class Game {
             updates.gamePhase = 'playing';
             updates.attackData = null;
             updates.roundEnded = true;
+            updates.roundWinner = winnerNumber;
         }
 
         updates.actionLog = this.gameState.actionLog;

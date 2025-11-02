@@ -1,6 +1,6 @@
 /*
-Version: 7.0
-Latest changes: Added card dimming and disabled hover effects when not player's turn
+Version: 8.0
+Latest changes: Fixed round result messages, added Web Audio sound effects for all game actions
 */
 
 class UI {
@@ -8,6 +8,8 @@ class UI {
         this.game = game;
         this.selectedCards = [];
         this.selectedCardForAction = null;
+        this.sounds = new SoundEffects();
+        this.lastLogLength = 0;
         this.initializeElements();
     }
 
@@ -195,12 +197,19 @@ class UI {
                 <p>Final Score: You ${playerScore} - ${opponentScore} Opponent</p>
             `;
             this.continueBtn.textContent = 'New Game';
+
+            // Play victory/defeat sound
+            if (youWon) {
+                this.sounds.playVictory();
+            } else {
+                this.sounds.playDefeat();
+            }
         } else {
-            const youWon = lastLog && lastLog.message.includes(`Player ${this.game.playerNumber} wins`);
+            const youWon = gameState.roundWinner === this.game.playerNumber;
             this.resultTitle.textContent = youWon ? 'Round Won!' : 'Round Lost';
             modal.className = 'modal ' + (youWon ? 'victory' : 'defeat');
             this.resultMessage.innerHTML = `
-                <p>${lastLog ? lastLog.message : ''}</p>
+                <p>${youWon ? 'You scored a hit!' : 'You were hit!'}</p>
                 <p>Score: You ${playerScore} - ${opponentScore} Opponent</p>
             `;
             this.continueBtn.textContent = 'Next Round';
@@ -217,8 +226,11 @@ class UI {
             this.game.leaveGame();
             location.reload();
         } else {
-            // Clear the roundEnded flag
-            await this.game.gameDoc.update({ roundEnded: false });
+            // Clear the roundEnded flag and roundWinner
+            await this.game.gameDoc.update({
+                roundEnded: false,
+                roundWinner: null
+            });
         }
     }
 
@@ -480,6 +492,14 @@ class UI {
     updateActionLog(gameState) {
         // Only show last 10 entries
         const entries = gameState.actionLog.slice(-10).reverse();
+
+        // Play sound for latest action
+        if (gameState.actionLog.length > 0 && this.lastLogLength !== gameState.actionLog.length) {
+            const latestLog = gameState.actionLog[gameState.actionLog.length - 1];
+            this.playActionSound(latestLog.message);
+            this.lastLogLength = gameState.actionLog.length;
+        }
+
         this.actionLog.innerHTML = '';
 
         entries.forEach(entry => {
@@ -500,5 +520,21 @@ class UI {
             logEntry.appendChild(message);
             this.actionLog.appendChild(logEntry);
         });
+    }
+
+    playActionSound(message) {
+        if (!this.sounds) return;
+
+        if (message.includes('moved forward') || message.includes('moved backward')) {
+            this.sounds.playMove();
+        } else if (message.includes('attacks with card') || message.includes('Advance and Attack')) {
+            this.sounds.playAttack();
+        } else if (message.includes('parries successfully')) {
+            this.sounds.playParry();
+        } else if (message.includes('ripostes')) {
+            this.sounds.playAttack();
+        } else if (message.includes('wins the round') || message.includes('scores a hit')) {
+            this.sounds.playHit();
+        }
     }
 }

@@ -1,5 +1,85 @@
 # Prompt and Response Tracking
 
+## 9. Fix Round Result Messages and Add Sound Effects
+
+**Agent**: Claude (Sonnet 4.5)
+
+**Date**: 2025-11-01
+
+**Prompt**:
+User reported two issues:
+1. "when the round is over, both players go the same 'round lost' message even though one player did win."
+2. "Also, are you able to generate sound effects to add to when someone moves, attacks or parries?"
+
+**Changes Made**:
+
+1. **Updated [game.js](game.js)** (Version 6.0 → 7.0):
+   - **Modified `scoreHit()` method** (lines 373-397):
+     - Added `updates.roundWinner = winnerNumber` to track who won the round
+     - Now stores winner in both game over and round win scenarios
+     - This field is used by UI to correctly show win/loss for each player
+
+2. **Updated [ui.js](ui.js)** (Version 7.0 → 8.0):
+   - **Fixed `showRoundResult()` method** (lines 184-219):
+     - Changed from parsing log messages to using `gameState.roundWinner`
+     - Now correctly shows "Round Won!" vs "Round Lost" for each player
+     - Added victory/defeat sound effects for game over
+   - **Updated `hideRoundResult()` method** (lines 221-226):
+     - Now clears both `roundEnded` and `roundWinner` fields
+   - **Added sound effect integration**:
+     - Added `this.sounds = new SoundEffects()` in constructor
+     - Added `this.lastLogLength = 0` to track new log entries
+     - Added `playActionSound()` method to detect action types from logs
+     - Modified `updateActionLog()` to play sounds for new actions
+
+3. **Created [sounds.js](sounds.js)** (Version 1.0):
+   - New file with Web Audio API sound effects class
+   - **Sound effects created**:
+     - `playMove()` - Soft descending swoosh for movement
+     - `playAttack()` - Sharp sawtooth strike for attacks
+     - `playParry()` - Metallic dual-tone clang for parries
+     - `playHit()` - Low thump for scoring hits
+     - `playVictory()` - Triumphant major chord (C-E-G)
+     - `playDefeat()` - Descending tone for losing
+     - `playCardDraw()` - Subtle tone for drawing cards
+   - Uses oscillators with frequency envelopes for realistic sounds
+   - Handles browser autoplay policies automatically
+
+4. **Updated [index.html](index.html)** (Version 4.0 → 5.0):
+   - Added `<script src="sounds.js"></script>` before game.js
+
+**Bug Fix - Round Result Messages**:
+
+**Problem**: Both players saw "Round Lost" because the UI was checking if the log message included "Player X wins" but the actual message was "Player X wins the round!" causing a mismatch.
+
+**Solution**:
+- Added `roundWinner` field to game state
+- UI now checks `gameState.roundWinner === this.game.playerNumber`
+- 100% reliable - no string parsing needed
+
+**Sound Effects Implementation**:
+
+**Web Audio API**:
+- ✅ No external audio files needed - all sounds generated programmatically
+- ✅ Lightweight and performant
+- ✅ Works on all modern browsers
+- ✅ Automatically handles suspended audio context (autoplay policy)
+
+**Sound Mapping**:
+- Move forward/backward → Soft swoosh (400Hz → 200Hz, 0.15s)
+- Attack → Sharp strike (800Hz → 400Hz sawtooth, 0.1s)
+- Parry → Metallic clang (dual tone 600Hz + 800Hz, 0.15s)
+- Hit/Round win → Low impact (150Hz → 50Hz, 0.2s)
+- Victory → Major chord progression (C5-E5-G5, 0.5s each)
+- Defeat → Descending tone (400Hz → 200Hz, 0.5s)
+
+**User Experience**:
+- ✅ Correct win/loss messages for each player
+- ✅ Audio feedback for all game actions
+- ✅ Sounds play automatically based on action log
+- ✅ No UI clutter - sounds just work in background
+- ✅ Can be toggled on/off with `sounds.toggle()` if needed
+
 ## 8. Add Card Dimming for Opponent's Turn
 
 **Agent**: Claude (Sonnet 4.5)
